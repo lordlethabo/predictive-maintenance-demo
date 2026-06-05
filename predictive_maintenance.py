@@ -1,10 +1,24 @@
+"""
+Predictive Maintenance AI Monitoring System
+
+Author: Lethabo Mafihle James Moshabane
+
+Description:
+A Python-based predictive maintenance monitoring system that simulates
+industrial asset monitoring using temperature and vibration data.
+
+The system calculates health scores, classifies equipment status, and
+generates maintenance recommendations using rule-based logic with optional
+Hugging Face AI integration.
+"""
+
 import os
 import random
 from collections import deque
 from huggingface_hub import InferenceClient
 
-HF_TOKEN = os.environ.get("HF_TOKEN")
 
+HF_TOKEN = os.environ.get("HF_TOKEN")
 client = InferenceClient(token=HF_TOKEN) if HF_TOKEN else None
 
 AI_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
@@ -13,6 +27,7 @@ TEMP_WARNING = 80
 TEMP_CRITICAL = 90
 VIB_WARNING = 4.0
 VIB_CRITICAL = 5.0
+
 
 ASSETS = {
     "PUMP-MQP-01": {
@@ -32,6 +47,7 @@ ASSETS = {
     },
 }
 
+
 def get_sensor_data():
     temperature = random.uniform(60, 100)
     vibration = random.uniform(1.0, 6.0)
@@ -45,7 +61,7 @@ def moving_average(values):
 def evaluate_status(avg_temp, avg_vib):
     if avg_temp >= TEMP_CRITICAL or avg_vib >= VIB_CRITICAL:
         return "CRITICAL"
-    elif avg_temp >= TEMP_WARNING or avg_vib >= VIB_WARNING:
+    if avg_temp >= TEMP_WARNING or avg_vib >= VIB_WARNING:
         return "WARNING"
     return "NORMAL"
 
@@ -59,7 +75,7 @@ def calculate_health_score(avg_temp, avg_vib):
 def maintenance_action(status):
     if status == "CRITICAL":
         return "Immediate shutdown required. Inspect bearings, vibration source, and cooling systems."
-    elif status == "WARNING":
+    if status == "WARNING":
         return "Schedule maintenance inspection and monitor the asset closely."
     return "No action required. Continue routine monitoring."
 
@@ -68,13 +84,15 @@ def fallback_ai_recommendation(asset_id, asset_type, avg_temp, avg_vib, status):
     if status == "CRITICAL":
         return (
             f"{asset_id} requires urgent maintenance. "
-            f"The {asset_type.lower()} should be stopped and inspected for overheating, excessive vibration, bearing wear, and cooling system faults."
+            f"The {asset_type.lower()} should be stopped and inspected for overheating, "
+            f"excessive vibration, bearing wear, and cooling system faults."
         )
 
     if status == "WARNING":
         return (
             f"{asset_id} is showing early warning signs. "
-            f"Schedule a preventive inspection, monitor temperature and vibration trends, and prepare maintenance resources."
+            f"Schedule a preventive inspection, monitor temperature and vibration trends, "
+            f"and prepare maintenance resources."
         )
 
     return (
@@ -102,10 +120,8 @@ Give a short professional maintenance recommendation in 2 sentences.
     try:
         response = client.chat_completion(
             model=AI_MODEL,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=80
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=80,
         )
 
         return response.choices[0].message.content
@@ -132,7 +148,7 @@ def monitor_asset(asset_id, asset_data):
         asset_data["type"],
         avg_temp,
         avg_vib,
-        status
+        status,
     )
 
     print("=" * 70)
@@ -150,9 +166,14 @@ def monitor_asset(asset_id, asset_data):
 
 
 def run_monitoring(cycles=3):
-    for cycle in range(cycles):
-        print(f"\n--- Monitoring Cycle {cycle + 1}/{cycles} ---")
+    print("Predictive Maintenance AI Monitoring System Started\n")
+
+    for cycle in range(1, cycles + 1):
+        print(f"\nMonitoring Cycle {cycle}")
+
         for asset_id, asset_data in ASSETS.items():
             monitor_asset(asset_id, asset_data)
 
-run_monitoring()
+
+if __name__ == "__main__":
+    run_monitoring()
