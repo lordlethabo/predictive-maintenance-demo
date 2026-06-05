@@ -1,26 +1,18 @@
 import os
-import csv
 import random
-from datetime import datetime
 from collections import deque
-
-from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
-load_dotenv()
+client = InferenceClient(token=HF_TOKEN) if HF_TOKEN else None
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-client = InferenceClient(token=HF_TOKEN)
-
-CSV_FILE = "maintenance_log.csv"
+AI_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 
 TEMP_WARNING = 80
 TEMP_CRITICAL = 90
-
 VIB_WARNING = 4.0
 VIB_CRITICAL = 5.0
-
 
 ASSETS = {
     "PUMP-MQP-01": {
@@ -39,7 +31,6 @@ ASSETS = {
         "vib_history": deque(maxlen=5),
     },
 }
-
 
 def get_sensor_data():
     temperature = random.uniform(60, 100)
@@ -67,13 +58,35 @@ def calculate_health_score(avg_temp, avg_vib):
 
 def maintenance_action(status):
     if status == "CRITICAL":
-        return "Immediate shutdown required. Inspect bearings, cooling system, and vibration source."
+        return "Immediate shutdown required. Inspect bearings, vibration source, and cooling systems."
     elif status == "WARNING":
-        return "Schedule inspection and continue close monitoring."
-    return "No action required. Asset operating normally."
+        return "Schedule maintenance inspection and monitor the asset closely."
+    return "No action required. Continue routine monitoring."
+
+
+def fallback_ai_recommendation(asset_id, asset_type, avg_temp, avg_vib, status):
+    if status == "CRITICAL":
+        return (
+            f"{asset_id} requires urgent maintenance. "
+            f"The {asset_type.lower()} should be stopped and inspected for overheating, excessive vibration, bearing wear, and cooling system faults."
+        )
+
+    if status == "WARNING":
+        return (
+            f"{asset_id} is showing early warning signs. "
+            f"Schedule a preventive inspection, monitor temperature and vibration trends, and prepare maintenance resources."
+        )
+
+    return (
+        f"{asset_id} is operating within normal limits. "
+        f"Continue routine monitoring and keep maintenance records updated."
+    )
 
 
 def generate_ai_recommendation(asset_id, asset_type, avg_temp, avg_vib, status):
+    if client is None:
+        return fallback_ai_recommendation(asset_id, asset_type, avg_temp, avg_vib, status)
+
     prompt = f"""
 You are an industrial maintenance assistant.
 
@@ -81,74 +94,24 @@ Asset ID: {asset_id}
 Asset Type: {asset_type}
 Average Temperature: {avg_temp:.2f} Celsius
 Average Vibration: {avg_vib:.2f}G
-System Status: {status}
+Status: {status}
 
 Give a short professional maintenance recommendation in 2 sentences.
 """
 
-    if not HF_TOKEN:
-        return "AI recommendation unavailable because HF_TOKEN is not configured."
-
     try:
         response = client.chat_completion(
-            model="HuggingFaceH4/zephyr-7b-beta",
+            model=AI_MODEL,
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=80,
+            max_tokens=80
         )
 
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
 
     except Exception:
-        return "AI recommendation unavailable. Follow standard maintenance procedure."
-
-
-def create_csv_file():
-    with open(CSV_FILE, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow([
-            "timestamp",
-            "asset_id",
-            "asset_type",
-            "temperature",
-            "vibration",
-            "avg_temperature",
-            "avg_vibration",
-            "health_score",
-            "status",
-            "maintenance_action",
-            "ai_recommendation"
-        ])
-
-
-def log_to_csv(
-    asset_id,
-    asset_type,
-    temperature,
-    vibration,
-    avg_temp,
-    avg_vib,
-    health_score,
-    status,
-    action,
-    ai_recommendation
-):
-    with open(CSV_FILE, mode="a", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow([
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            asset_id,
-            asset_type,
-            temperature,
-            vibration,
-            round(avg_temp, 2),
-            round(avg_vib, 2),
-            health_score,
-            status,
-            action,
-            ai_recommendation
-        ])
+        return fallback_ai_recommendation(asset_id, asset_type, avg_temp, avg_vib, status)
 
 
 def monitor_asset(asset_id, asset_data):
@@ -162,7 +125,7 @@ def monitor_asset(asset_id, asset_data):
 
     status = evaluate_status(avg_temp, avg_vib)
     health_score = calculate_health_score(avg_temp, avg_vib)
-    action = maintenance_action(status)
+    rule_based_action = maintenance_action(status)
 
     ai_recommendation = generate_ai_recommendation(
         asset_id,
@@ -172,8 +135,24 @@ def monitor_asset(asset_id, asset_data):
         status
     )
 
-    print(f"Asset: {asset_id} ({asset_data['type']})")
-    print(f"Temperature: {temperature} C | Vibration: {vibration}G")
-    print(f"Average Temperature: {avg_temp:.2f} C | Average Vibration: {avg_vib:.2f}G")
+    print("=" * 70)
+    print(f"Asset: {asset_id}")
+    print(f"Type: {asset_data['type']}")
+    print(f"Temperature: {temperature} C")
+    print(f"Vibration: {vibration}G")
+    print(f"Average Temperature: {avg_temp:.2f} C")
+    print(f"Average Vibration: {avg_vib:.2f}G")
     print(f"Health Score: {health_score}/100")
-    print(f"Status:
+    print(f"Status: {status}")
+    print(f"Rule-Based Action: {rule_based_action}")
+    print(f"AI Recommendation: {ai_recommendation}")
+    print("=" * 70)
+
+
+def run_monitoring(cycles=3):
+    for cycle in range(cycles):
+        print(f"\n--- Monitoring Cycle {cycle + 1}/{cycles} ---")
+        for asset_id, asset_data in ASSETS.items():
+            monitor_asset(asset_id, asset_data)
+
+run_monitoring()
