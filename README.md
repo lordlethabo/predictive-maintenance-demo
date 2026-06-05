@@ -1,69 +1,59 @@
-#  Predictive Maintenance System (Pump Monitoring Simulation)
+# Predictive Maintenance AI Monitoring System
 
 ## Overview
 
-This project simulates an industrial predictive maintenance system for a mining pump asset (**PUMP-MQP-01**).  
-It demonstrates how sensor data (temperature and vibration) can be used to monitor machine health and detect early warning signs of equipment failure.
+This project simulates an industrial predictive maintenance system for pumps, motors, and compressors.
 
-The system applies basic engineering principles such as trend analysis and threshold-based anomaly detection to classify machine health status.
-
----
+It uses Python to generate simulated sensor readings, calculate moving averages, classify asset health, log maintenance data to CSV, and generate AI-powered maintenance recommendations using Hugging Face.
 
 ## Features
 
-- Simulated real-time sensor data (temperature & vibration)
+- Simulated industrial sensor data
+- Multiple asset monitoring
+- Temperature and vibration analysis
 - Moving average trend analysis
-- Health classification system:
-  - NORMAL
-  - WARNING
-  - CRITICAL
-- Automated maintenance recommendations
-- Controlled runtime simulation (20 cycles)
+- Health score calculation
+- Status classification: NORMAL, WARNING, CRITICAL
+- Rule-based maintenance actions
+- Hugging Face AI maintenance recommendations
+- CSV maintenance logging
 
----
+## Technologies Used
 
-##  Engineering Concept
+- Python
+- Hugging Face Inference API
+- python-dotenv
+- CSV logging
+- Git and GitHub
 
-The system models a simplified version of industrial predictive maintenance used in:
+## Assets Monitored
 
-- Mining equipment monitoring
-- Manufacturing machinery health tracking
-- Industrial IoT systems
-
-Instead of reacting to breakdowns, the system identifies **early warning signs** using sensor trends.
-
----
+- Industrial Pump
+- Electric Motor
+- Air Compressor
 
 ## System Logic
 
-1. Generate sensor data (temperature & vibration)
-2. Store recent readings (trend window)
-3. Calculate moving averages
-4. Evaluate machine health status
-5. Trigger maintenance action based on severity
+1. Generate simulated sensor readings.
+2. Store recent temperature and vibration values.
+3. Calculate moving averages.
+4. Classify asset status.
+5. Calculate health score.
+6. Generate rule-based maintenance action.
+7. Generate AI maintenance recommendation.
+8. Save results to CSV.
 
----
+## Health Status Logic
 
-## Health Classification
-
-| Status    | Condition |
-|-----------|----------|
-| NORMAL    | Stable operation |
-| WARNING   | Elevated risk detected |
-| CRITICAL  | Immediate maintenance required |
-
----
-
-## Maintenance Actions
-
-- **NORMAL:** No action required  
-- **WARNING:** Schedule inspection and monitor system  
-- **CRITICAL:** Immediate shutdown and inspect bearings & cooling system  
-
----
+| Status | Condition |
+|---|---|
+| NORMAL | Asset operating within safe range |
+| WARNING | Elevated temperature or vibration detected |
+| CRITICAL | Serious risk detected requiring urgent action |
 
 ## How to Run
 
-### 1. Clone repository
+Install dependencies:
+
 ```bash
-git clone https://github.com/lordlethabo/predictive-maintenance-demo.git
+pip install -r requirements.txt
